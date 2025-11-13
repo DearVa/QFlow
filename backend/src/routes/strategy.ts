@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { StrategyEngine } from '../strategy/engine';
+import { StrategyEngine, StrategyPayload } from '../strategy/engine';
 import { BinanceClient } from '../services/binanceClient';
 import type { Candlestick } from '../types';
 
@@ -19,7 +19,7 @@ router.post('/compile', (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid payload' });
   }
-  const compiled = engine.compile(parsed.data);
+  const compiled = engine.compile(parsed.data as StrategyPayload);
   res.json(compiled);
 });
 
@@ -47,7 +47,7 @@ router.post('/backtest', async (req, res) => {
       close: Number(candle[4]),
       volume: Number(candle[5])
     }));
-    const result = await engine.backtest(strategy, candles);
+    const result = await engine.backtest(strategy as StrategyPayload, candles);
     res.json(result);
   } catch (error) {
     console.error('[backtest] failed', error);

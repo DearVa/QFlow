@@ -1,7 +1,7 @@
 import { SMA } from 'technicalindicators';
 import type { Candlestick } from '../types';
 
-type StrategyPayload = {
+export type StrategyPayload = {
   id: string;
   code: string;
   nodes: unknown;
