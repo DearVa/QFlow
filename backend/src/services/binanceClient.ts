@@ -1,5 +1,16 @@
 // @ts-ignore
 import { Spot } from '@binance/spot';
+import { URL } from 'url';
+
+type ProxyConfiguration = {
+  host: string;
+  port: number;
+  protocol?: string;
+  auth?: {
+    username: string;
+    password: string;
+  };
+};
 
 export class BinanceClient {
   private readonly spot: Spot;
@@ -11,19 +22,47 @@ export class BinanceClient {
       configurationRestAPI: {
         apiKey: key,
         apiSecret: secret,
-        proxy: getSystemProxy(),
+        proxy: BinanceClient.getSystemProxy(),
       }
     });
   }
 
 
-  static getSystemProxy() {
-    // TODO: get system proxy settings
-    // proxy: {
-    //   host: '127.0.0.1',
-    //       port: 7897,
-    //       protocol: 'http',
-    // },
+  static getSystemProxy(): ProxyConfiguration | undefined {
+    const proxy = process.env.HTTPS_PROXY
+      ?? process.env.https_proxy
+      ?? process.env.HTTP_PROXY
+      ?? process.env.http_proxy;
+
+    if (!proxy) {
+      return undefined;
+    }
+
+    try {
+      const parsed = new URL(proxy);
+      const host = parsed.hostname;
+      const port = parsed.port ? Number(parsed.port) : undefined;
+      if (!host || !port || Number.isNaN(port)) {
+        return undefined;
+      }
+
+      const config: ProxyConfiguration = {
+        host,
+        port,
+        protocol: parsed.protocol?.replace(':', ''),
+      };
+
+      if (parsed.username && parsed.password) {
+        config.auth = {
+          username: decodeURIComponent(parsed.username),
+          password: decodeURIComponent(parsed.password),
+        };
+      }
+
+      return config;
+    } catch (error) {
+      return undefined;
+    }
   }
 
   async getCandles(symbol: string, interval: string, limit = 500): Promise<number[][]> {

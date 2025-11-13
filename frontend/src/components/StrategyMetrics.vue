@@ -1,11 +1,12 @@
 <template>
-  <div class="metrics">
-    <h3>Backtest Metrics</h3>
-    <div class="grid">
-      <div v-for="metric in marketStore.metrics" :key="metric.label" class="metric">
-        <span class="label">{{ metric.label }}</span>
-        <span class="value">{{ metric.value }}</span>
-      </div>
+  <div class="grid h-full gap-3 overflow-auto rounded-lg border border-slate-900 bg-slate-950 p-4 sm:grid-cols-2">
+    <div
+      v-for="metric in marketStore.metrics"
+      :key="metric.label"
+      class="rounded-lg border border-slate-800 bg-slate-950 p-4"
+    >
+      <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ metric.label }}</p>
+      <p class="pt-2 text-2xl font-semibold text-white">{{ metric.value }}</p>
     </div>
   </div>
 </template>
@@ -15,35 +16,3 @@ import { useMarketStore } from '../stores/market';
 
 const marketStore = useMarketStore();
 </script>
-
-<style scoped>
-.metrics {
-  background: #0b1120;
-  border-radius: 12px;
-  padding: 1rem;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 0.75rem;
-}
-
-.metric {
-  background: #111c34;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-}
-
-.label {
-  font-size: 0.8rem;
-  color: #94a3b8;
-}
-
-.value {
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-</style>

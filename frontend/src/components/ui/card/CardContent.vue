@@ -1,0 +1,12 @@
+<template>
+  <div
+    v-bind="$attrs"
+    :class="['p-6 pt-0', props.class]"
+  >
+    <slot />
+  </div>
+</template>
+
+<script setup lang="ts">
+const props = defineProps<{ class?: string }>();
+</script>
