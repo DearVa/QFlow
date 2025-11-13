@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { CandlestickData } from 'lightweight-charts';
-import { fetchCandles } from '../services/binance';
+import { fetchCandles as fetchMarketCandles } from '../services/binance';
 import type { StrategyNodeGraph, CompiledStrategy, StrategyMetric } from '../types/strategy';
 import { buildStrategyFromNodes } from '../services/strategy';
 import { useStrategyEngine } from '../composables/useStrategyEngine';
@@ -23,19 +23,21 @@ export const useMarketStore = defineStore('market', () => {
 
   const setSymbol = (next: string) => {
     symbol.value = next;
-    fetchCandles();
+    loadCandles();
   };
 
-  const fetchCandles = async () => {
-    candles.value = await fetchCandles(symbol.value, interval.value);
+  const loadCandles = async () => {
+    candles.value = await fetchMarketCandles(symbol.value, interval.value);
   };
+
+  void loadCandles();
 
   const compileStrategy = async (graph: StrategyNodeGraph): Promise<CompiledStrategy> => {
     return buildStrategyFromNodes(graph);
   };
 
   const activateStrategy = async (compiled: CompiledStrategy) => {
-    const results = await strategyEngine.runBacktest(compiled, candles.value);
+    const results = await strategyEngine.runBacktest(compiled, symbol.value, interval.value);
     activeMarkers.value = results.markers;
     activeStrategySignals.value = results.signals;
     metrics.value = results.metrics;
@@ -50,7 +52,7 @@ export const useMarketStore = defineStore('market', () => {
     activeStrategySignals,
     metrics,
     setSymbol,
-    fetchCandles,
+    fetchCandles: loadCandles,
     compileStrategy,
     activateStrategy
   };

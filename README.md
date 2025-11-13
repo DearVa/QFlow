@@ -42,15 +42,15 @@ npm run dev
 
 The API exposes:
 
-- `GET /api/market/candles` – Binance candles proxy
+- `GET /api/market/candles` – Binance candles proxy (powered by `@binance/connector`)
 - `POST /api/strategy/compile` – turn node graph into executable metadata
-- `POST /api/strategy/backtest` – basic toy backtest returning mock metrics
+- `POST /api/strategy/backtest` – SMA cross backtest that derives trades + metrics via `technicalindicators`
 
 The WebSocket stream lives at `ws://localhost:8080/strategy-stream`.
 
 ## Next steps
 
-- Replace the mock strategy compiler/backtest engine with production ready logic
+- Expand the strategy compiler/backtest engine with additional indicators and risk controls
 - Persist strategies per user and allow server-side execution
 - Harden the node editor UX (custom nodes, connectors, validation)
 - Add authentication and encrypted secret storage for API keys

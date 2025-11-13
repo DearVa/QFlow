@@ -1,6 +1,6 @@
 import type { AreaPlugin } from 'rete-area-plugin';
-import { createEditor, createArea } from 'rete';
-import type { NodeEditor } from 'rete';
+import { createArea } from 'rete-area-plugin';
+import { createEditor, type NodeEditor } from 'rete';
 import type { StrategyNodeGraph, CompiledStrategy } from '../types/strategy';
 
 export const createStrategyEditor = async (container: HTMLElement): Promise<NodeEditor> => {
