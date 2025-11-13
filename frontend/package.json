@@ -1,26 +1,37 @@
 {
   "name": "qflow-frontend",
   "version": "0.1.0",
+  "packageManager": "pnpm@8.8.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint src/**/* --ext .tsx,.ts --quiet",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.17",
     "axios": "^1.6.7",
     "lightweight-charts": "^4.1.2",
     "pinia": "^2.1.7",
     "rete": "^2.0.1",
     "rete-area-plugin": "^2.0.1",
+    "tailwindcss": "^4.1.17",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@types/node": "^20.11.24",
     "@vitejs/plugin-vue": "^5.0.3",
+    "eslint": "^9.39.1",
+    "eslint-plugin-vue": "^10.5.1",
+    "globals": "^16.5.0",
+    "jiti": "^2.6.1",
     "typescript": "^5.4.2",
+    "typescript-eslint": "^8.46.4",
     "vite": "^5.1.5",
     "vue-tsc": "^2.0.6"
   }

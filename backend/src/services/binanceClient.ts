@@ -1,8 +1,7 @@
-// @ts-ignore
 import { Spot } from '@binance/spot';
 import { URL } from 'url';
 
-type ProxyConfiguration = {
+interface ProxyConfiguration {
   host: string;
   port: number;
   protocol?: string;

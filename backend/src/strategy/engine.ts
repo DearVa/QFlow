@@ -1,20 +1,20 @@
 import { SMA } from 'technicalindicators';
 import type { Candlestick } from '../types';
 
-export type StrategyPayload = {
+export interface StrategyPayload {
   id: string;
   code: string;
   nodes: unknown;
 };
 
-type StrategyConfig = {
+interface StrategyConfig {
   shortPeriod: number;
   longPeriod: number;
   takeProfitPct: number;
   stopLossPct: number;
 };
 
-type Trade = {
+interface Trade {
   entryTime: number;
   exitTime: number;
   entryPrice: number;

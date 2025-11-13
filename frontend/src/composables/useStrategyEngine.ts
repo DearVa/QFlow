@@ -1,8 +1,8 @@
 import axios from 'axios';
 import type { CompiledStrategy, StrategyMetric } from '../types/strategy';
 
-type Marker = { time: number; type: 'take-profit' | 'stop-loss'; label: string };
-type Signal = { time: number; price: number };
+interface Marker { time: number; type: 'take-profit' | 'stop-loss'; label: string };
+interface Signal { time: number; price: number };
 
 type BacktestResult = {
   markers: Marker[];
