@@ -2,15 +2,15 @@ import { AreaPlugin } from 'rete-area-plugin';
 import { NodeEditor, GetSchemes, ClassicPreset } from 'rete';
 import type { StrategyNodeGraph, CompiledStrategy } from '../types/strategy';
 
-type Schemes = GetSchemes<ClassicPreset.Node, ClassicPreset.Connection<ClassicPreset.Node, ClassicPreset.Node>>;
+export type StrategyEditorSchemes = GetSchemes<ClassicPreset.Node, ClassicPreset.Connection<ClassicPreset.Node, ClassicPreset.Node>>;
 
 type AreaExtra = {
     getNodesRect(): DOMRect;
 };
 
-export const createStrategyEditor = async (container: HTMLElement): Promise<NodeEditor<Schemes>> => {
-    const editor = new NodeEditor<Schemes>();
-    const area = new AreaPlugin<Schemes, AreaExtra>(container);
+export const createStrategyEditor = async (container: HTMLElement): Promise<NodeEditor<StrategyEditorSchemes>> => {
+    const editor = new NodeEditor<StrategyEditorSchemes>();
+    const area = new AreaPlugin<StrategyEditorSchemes, AreaExtra>(container);
     editor.use(area);
     return editor;
 };
