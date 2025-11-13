@@ -1,0 +1,28 @@
+import axios from 'axios';
+import type { CompiledStrategy, StrategyMetric } from '../types/strategy';
+
+type Marker = { time: number; type: 'take-profit' | 'stop-loss'; label: string };
+type Signal = { time: number; price: number };
+
+type BacktestResult = {
+  markers: Marker[];
+  signals: Signal[];
+  metrics: StrategyMetric[];
+};
+
+export const useStrategyEngine = () => {
+  const runBacktest = async (
+    compiled: CompiledStrategy,
+    symbol: string,
+    interval: string
+  ): Promise<BacktestResult> => {
+    const { data } = await axios.post('/api/strategy/backtest', {
+      strategy: compiled,
+      symbol,
+      interval
+    });
+    return data;
+  };
+
+  return { runBacktest };
+};
