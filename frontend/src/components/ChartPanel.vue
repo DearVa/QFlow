@@ -44,8 +44,8 @@ import {
   type SeriesMarker,
   type Time
 } from 'lightweight-charts';
-import { useMarketStore } from '../stores/market';
-import Button from './ui/button/Button.vue';
+import { useMarketStore } from '@/stores/market';
+import { Button } from '@/components/ui/button';
 
 const chartContainer = ref<HTMLDivElement | null>(null);
 const marketStore = useMarketStore();

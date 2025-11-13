@@ -17,8 +17,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import Button from './ui/button/Button.vue';
-import { useMarketStore } from '../stores/market';
+import { Button } from '@/components/ui/button';
+import { useMarketStore } from '@/stores/market';
 
 const marketStore = useMarketStore();
 const symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT'];

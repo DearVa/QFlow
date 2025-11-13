@@ -1,14 +1,22 @@
 import axios from 'axios';
-import type { CompiledStrategy, StrategyMetric } from '../types/strategy';
+import type { CompiledStrategy, StrategyMetric } from '@/types/strategy';
 
-interface Marker { time: number; type: 'take-profit' | 'stop-loss'; label: string };
-interface Signal { time: number; price: number };
+interface Marker {
+  time: number;
+  type: 'take-profit' | 'stop-loss';
+  label: string
+}
 
-type BacktestResult = {
+interface Signal {
+  time: number;
+  price: number
+}
+
+interface BacktestResult {
   markers: Marker[];
   signals: Signal[];
   metrics: StrategyMetric[];
-};
+}
 
 export const useStrategyEngine = () => {
   const runBacktest = async (

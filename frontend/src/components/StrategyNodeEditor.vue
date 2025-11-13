@@ -1,9 +1,10 @@
 <template>
   <div class="relative h-full w-full overflow-hidden rounded-lg border border-slate-900 bg-slate-950">
     <div
-      class="pointer-events-auto absolute left-4 top-4 z-10 flex flex-col gap-2 rounded-lg border border-slate-800 bg-slate-950/90 p-2 text-[11px] uppercase tracking-[0.4em] shadow-2xl"
+        class="pointer-events-auto absolute left-4 top-4 z-10 flex flex-col gap-2 rounded-lg border border-slate-800 bg-slate-950/90 p-2 text-[11px] uppercase tracking-[0.4em] shadow-2xl"
     >
-      <Button size="sm" variant="ghost" class="justify-start text-[11px] uppercase" @click="compileOnly">Compile</Button>
+      <Button size="sm" variant="ghost" class="justify-start text-[11px] uppercase" @click="compileOnly">Compile
+      </Button>
       <Button size="sm" variant="secondary" class="justify-start text-[11px] uppercase" @click="runBacktest">
         Run backtest
       </Button>
@@ -38,10 +39,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import type { NodeEditor } from 'rete';
-import { useMarketStore } from '../stores/market';
-import { createStrategyEditor, type StrategyEditorSchemes } from '../services/strategy';
-import type { CompiledStrategy, StrategyNodeGraph } from '../types/strategy';
-import Button from './ui/button/Button.vue';
+import { useMarketStore } from '@/stores/market';
+import { createStrategyEditor, type StrategyEditorSchemes } from '@/services/strategy';
+import type { CompiledStrategy, StrategyNodeGraph } from '@/types/strategy';
+import { Button } from '@/components/ui/button';
 
 const marketStore = useMarketStore();
 const editor = ref<HTMLDivElement | null>(null);
@@ -88,7 +89,7 @@ const loadSnapshot = async () => {
 const exportGraph = () => {
   if (!nodeEditor) return;
   const data = JSON.stringify(nodeEditor.toJSON(), null, 2);
-  const blob = new Blob([data], { type: 'application/json' });
+  const blob = new Blob([data], {type: 'application/json'});
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;

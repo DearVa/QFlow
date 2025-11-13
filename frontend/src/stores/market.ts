@@ -2,9 +2,9 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { CandlestickData } from 'lightweight-charts';
 import { fetchCandles as fetchMarketCandles } from '../services/binance';
-import type { StrategyNodeGraph, CompiledStrategy, StrategyMetric } from '../types/strategy';
-import { buildStrategyFromNodes } from '../services/strategy';
-import { useStrategyEngine } from '../composables/useStrategyEngine';
+import type { StrategyNodeGraph, CompiledStrategy, StrategyMetric } from '@/types/strategy';
+import { buildStrategyFromNodes } from '@/services/strategy';
+import { useStrategyEngine } from '@/composables/useStrategyEngine';
 
 export const useMarketStore = defineStore('market', () => {
   const symbol = ref('BTCUSDT');

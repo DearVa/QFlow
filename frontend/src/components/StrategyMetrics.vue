@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { useMarketStore } from '../stores/market';
+import { useMarketStore } from '@/stores/market';
 
 const marketStore = useMarketStore();
 </script>
