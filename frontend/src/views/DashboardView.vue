@@ -2,75 +2,7 @@
   <div class="h-screen w-full overflow-hidden bg-background text-foreground">
     <ResizablePanelGroup direction="horizontal" class="h-full w-full">
       <ResizablePanel :default-size="65" class="flex flex-col border-r border-border/50 bg-slate-950/60">
-        <div class="flex flex-wrap items-center gap-6 border-b border-border/60 px-6 py-4">
-          <div class="w-64 min-w-[14rem]">
-            <Combobox v-model="selectedSymbol">
-              <ComboboxAnchor class="w-full">
-                <ComboboxTrigger class="w-full justify-between rounded-xl border border-border/60 bg-slate-900/80 px-4 py-2 text-left">
-                  <div class="flex flex-col">
-                    <span class="text-sm font-semibold tracking-wide">{{ symbolLabel }}</span>
-                    <span class="text-xs text-muted-foreground">{{ symbolDescription }}</span>
-                  </div>
-                  <ChevronsUpDown class="size-4 text-muted-foreground" />
-                </ComboboxTrigger>
-              </ComboboxAnchor>
-              <ComboboxContent class="w-72 rounded-xl border border-border/70 bg-slate-950">
-                <ComboboxInput placeholder="Search pairs" />
-                <ComboboxList>
-                  <ComboboxViewport>
-                    <ComboboxGroup heading="Supported pairs">
-                      <ComboboxItem v-for="option in symbolOptions" :key="option.value" :value="option.value">
-                        <div class="flex w-full items-center gap-2">
-                          <ComboboxItemIndicator>
-                            <Check class="size-4 text-primary" />
-                          </ComboboxItemIndicator>
-                          <div class="flex flex-col">
-                            <span class="text-sm font-medium">{{ option.label }}</span>
-                            <span class="text-xs text-muted-foreground">{{ option.description }}</span>
-                          </div>
-                        </div>
-                      </ComboboxItem>
-                    </ComboboxGroup>
-                  </ComboboxViewport>
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-          </div>
-          <div class="grid flex-1 grid-cols-2 gap-6 md:grid-cols-4">
-            <div
-              v-for="metric in ohlcMetrics"
-              :key="metric.label"
-              class="rounded-xl border border-border/50 bg-slate-900/60 px-4 py-2"
-            >
-              <p class="text-xs text-muted-foreground uppercase tracking-wide">{{ metric.label }}</p>
-              <p class="text-lg font-semibold text-slate-50">{{ metric.value }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="flex-1 overflow-hidden p-4">
-          <ChartPanel />
-        </div>
-        <div class="flex flex-wrap items-center justify-between gap-4 border-t border-border/60 px-6 py-3 text-xs">
-          <div class="flex flex-wrap gap-2">
-            <Button
-              v-for="frame in intervalOptions"
-              :key="frame"
-              size="sm"
-              :variant="frame === currentInterval ? 'default' : 'secondary'"
-              class="rounded-full"
-              @click="() => selectInterval(frame)"
-            >
-              {{ frame }}
-            </Button>
-          </div>
-          <div class="flex items-center gap-3 text-right text-sm">
-            <Clock class="size-4 text-muted-foreground" />
-            <div>
-              <p class="font-semibold">{{ formattedNow }}</p>
-              <p class="text-xs text-muted-foreground">{{ timezone }}</p>
-            </div>
-          </div>
-        </div>
+        <ChartPanel />
       </ResizablePanel>
       <ResizableHandle with-handle />
       <ResizablePanel :default-size="35" class="flex flex-col bg-slate-950/40">
@@ -124,35 +56,16 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { useNow } from '@vueuse/core';
-import { Check, ChevronsUpDown, Clock, Download, Play, Upload } from 'lucide-vue-next';
+import { Download, Play, Upload } from 'lucide-vue-next';
 import ChartPanel from '@/components/ChartPanel.vue';
 import StrategyEditor from '@/components/StrategyEditor.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Combobox,
-  ComboboxAnchor,
-  ComboboxContent,
-  ComboboxGroup,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxItemIndicator,
-  ComboboxList,
-  ComboboxTrigger,
-  ComboboxViewport
-} from '@/components/ui/combobox';
 import { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarTrigger } from '@/components/ui/menubar';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { useMarketStore } from '@/stores/market';
 import type { StrategyNodeGraph } from '@/types/strategy';
 import { strategyGraphSchema } from '@/lib/strategy-schema';
-
-interface SymbolOption {
-  value: string;
-  label: string;
-  description: string;
-}
 
 const createGraphId = () => {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -200,77 +113,6 @@ const cloneGraph = (graph: StrategyNodeGraph): StrategyNodeGraph => JSON.parse(J
 
 const marketStore = useMarketStore();
 const strategyGraph = ref<StrategyNodeGraph>(cloneGraph(defaultStrategyGraph));
-const symbolOptions: SymbolOption[] = [
-  { value: 'BTCUSDT', label: 'BTC / USDT', description: 'Bitcoin perpetual' },
-  { value: 'BNBUSDT', label: 'BNB / USDT', description: 'BNB perpetual' },
-  { value: 'ETHUSDT', label: 'ETH / USDT', description: 'Ethereum perpetual' },
-  { value: 'SOLUSDT', label: 'SOL / USDT', description: 'Solana perpetual' }
-];
-const intervalOptions = [
-  '1s',
-  '1m',
-  '3m',
-  '5m',
-  '15m',
-  '30m',
-  '1h',
-  '2h',
-  '4h',
-  '6h',
-  '8h',
-  '12h',
-  '1d',
-  '3d',
-  '1w',
-  '1M'
-];
-
-const selectedSymbol = computed({
-  get: () => marketStore.symbol,
-  set: value => {
-    if (typeof value === 'string') {
-      marketStore.setSymbol(value);
-    }
-  }
-});
-
-const symbolLabel = computed(() => {
-  const match = symbolOptions.find(option => option.value === selectedSymbol.value);
-  return match?.label ?? selectedSymbol.value;
-});
-
-const symbolDescription = computed(() => {
-  const match = symbolOptions.find(option => option.value === selectedSymbol.value);
-  return match?.description ?? 'Spot market';
-});
-
-const ohlcMetrics = computed(() => {
-  const last = marketStore.candles[marketStore.candles.length - 1];
-  if (!last) {
-    return [
-      { label: 'Open', value: '-' },
-      { label: 'High', value: '-' },
-      { label: 'Low', value: '-' },
-      { label: 'Close', value: '-' }
-    ];
-  }
-  return [
-    { label: 'Open', value: Number(last.open).toFixed(2) },
-    { label: 'High', value: Number(last.high).toFixed(2) },
-    { label: 'Low', value: Number(last.low).toFixed(2) },
-    { label: 'Close', value: Number(last.close).toFixed(2) }
-  ];
-});
-
-const currentInterval = computed(() => marketStore.interval);
-const selectInterval = (frame: string) => {
-  marketStore.setIntervalFrame(frame);
-};
-
-const now = useNow({ interval: 1000 });
-const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-const formatter = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'medium' });
-const formattedNow = computed(() => formatter.format(now.value));
 
 const fileInput = ref<HTMLInputElement | null>(null);
 const isCompiling = ref(false);

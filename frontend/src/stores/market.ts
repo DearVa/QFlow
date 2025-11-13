@@ -1,39 +1,47 @@
-import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import type { CandlestickData } from 'lightweight-charts';
-import { fetchCandles as fetchMarketCandles } from '../services/binance';
-import type { StrategyNodeGraph, CompiledStrategy, StrategyMetric } from '@/types/strategy';
-import { buildStrategyFromNodes } from '@/services/strategy';
-import { useStrategyEngine } from '@/composables/useStrategyEngine';
+import { defineStore } from "pinia";
+import { ref, computed, watch } from "vue";
+import type { CandlestickData } from "lightweight-charts";
+import { fetchCandles as fetchMarketCandles } from "../services/binance";
+import type { StrategyNodeGraph, CompiledStrategy, StrategyMetric } from "@/types/strategy";
+import { buildStrategyFromNodes } from "@/services/strategy";
+import { useStrategyEngine } from "@/composables/useStrategyEngine";
 
-export const useMarketStore = defineStore('market', () => {
-  const symbol = ref('BTCUSDT');
-  const interval = ref('1h');
+export const useMarketStore = defineStore("market", () => {
+  const symbol = ref("BTCUSDT");
+  const colors = ref({
+    upColor: "#ef4444",
+    borderUpColor: "#b91c1c",
+    wickUpColor: "#b91c1c",
+    downColor: "#22c55e",
+    borderDownColor: "#15803d",
+    wickDownColor: "#15803d",
+  });
+  const interval = ref("1h");
   const intervalDurations: Record<string, number> = {
-    '1s': 1000,
-    '1m': 60_000,
-    '3m': 180_000,
-    '5m': 300_000,
-    '15m': 900_000,
-    '30m': 1_800_000,
-    '1h': 3_600_000,
-    '2h': 7_200_000,
-    '4h': 14_400_000,
-    '6h': 21_600_000,
-    '8h': 28_800_000,
-    '12h': 43_200_000,
-    '1d': 86_400_000,
-    '3d': 259_200_000,
-    '1w': 604_800_000,
-    '1M': 2_592_000_000
+    "1s": 1000,
+    "1m": 60_000,
+    "3m": 180_000,
+    "5m": 300_000,
+    "15m": 900_000,
+    "30m": 1_800_000,
+    "1h": 3_600_000,
+    "2h": 7_200_000,
+    "4h": 14_400_000,
+    "6h": 21_600_000,
+    "8h": 28_800_000,
+    "12h": 43_200_000,
+    "1d": 86_400_000,
+    "3d": 259_200_000,
+    "1w": 604_800_000,
+    "1M": 2_592_000_000,
   };
   const candles = ref<CandlestickData[]>([]);
-  const activeMarkers = ref<{ time: number; type: 'take-profit' | 'stop-loss'; label: string }[]>([]);
+  const activeMarkers = ref<{ time: number; type: "take-profit" | "stop-loss"; label: string }[]>([]);
   const activeStrategySignals = ref<{ time: number; price: number }[]>([]);
   const metrics = ref<StrategyMetric[]>([
-    { label: 'CAGR', value: '-' },
-    { label: 'Max Drawdown', value: '-' },
-    { label: 'Sharpe', value: '-' }
+    { label: "CAGR", value: "-" },
+    { label: "Max Drawdown", value: "-" },
+    { label: "Sharpe", value: "-" },
   ]);
   const strategyEngine = useStrategyEngine();
 
@@ -42,39 +50,47 @@ export const useMarketStore = defineStore('market', () => {
   const resolveRefreshDuration = (frame: string) => intervalDurations[frame] ?? 60_000;
 
   let refreshHandle: ReturnType<typeof setInterval> | null = null;
+  let fetchController: AbortController | null = null;
 
   const scheduleAutoRefresh = () => {
     if (refreshHandle) {
       clearInterval(refreshHandle);
     }
     refreshHandle = setInterval(() => {
-      void loadCandles();
+      void fetchCandles();
     }, resolveRefreshDuration(interval.value));
   };
 
-  const setSymbol = (next: string) => {
-    if (symbol.value === next) {
-      return;
+  const fetchCandles = async () => {
+    // Abort previous fetch request if it's still in flight
+    if (fetchController) {
+      fetchController.abort();
     }
-    symbol.value = next;
-    void loadCandles();
+    // Create a new controller for the new request
+    fetchController = new AbortController();
+    const signal = fetchController.signal;
+
+    try {
+      // Pass the signal to the fetch service
+      const fetchedCandles = await fetchMarketCandles(symbol.value, interval.value, signal);
+      candles.value = fetchedCandles;
+    } catch (error: any) {
+      // Ignore abort errors as they are expected when the user quickly changes symbol/interval
+      if (error.name !== 'AbortError') {
+        console.error("Failed to fetch candles:", error);
+      }
+    }
   };
 
-  const setIntervalFrame = (next: string) => {
-    if (interval.value === next) {
-      return;
+  watch([symbol, interval], ([, newInterval], [, oldInterval]) => {
+    void fetchCandles();
+    if (newInterval !== oldInterval) {
+      scheduleAutoRefresh();
     }
-    interval.value = next;
-    void loadCandles();
-    scheduleAutoRefresh();
-  };
-
-  const loadCandles = async () => {
-    candles.value = await fetchMarketCandles(symbol.value, interval.value);
-  };
+  });
 
   void (async () => {
-    await loadCandles();
+    await fetchCandles();
     scheduleAutoRefresh();
   })();
 
@@ -91,17 +107,17 @@ export const useMarketStore = defineStore('market', () => {
 
   return {
     symbol,
+    colors,
+    intervalDurations: Object.keys(intervalDurations),
     interval,
     candles,
     isLoaded,
     activeMarkers,
     activeStrategySignals,
     metrics,
-    setSymbol,
-    setIntervalFrame,
-    fetchCandles: loadCandles,
+    fetchCandles,
     compileStrategy,
     activateStrategy,
-    scheduleAutoRefresh
+    scheduleAutoRefresh,
   };
 });

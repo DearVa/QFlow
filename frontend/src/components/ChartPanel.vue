@@ -1,51 +1,90 @@
 <template>
-  <div class="relative h-full w-full overflow-hidden rounded-xl border border-border/60 bg-card/70">
-    <TooltipProvider>
-      <div
-        class="pointer-events-auto absolute left-4 top-4 z-10 flex flex-col gap-2 rounded-full border border-border/50 bg-background/70 p-2 shadow-xl backdrop-blur"
-      >
-        <Tooltip v-for="tool in tools" :key="tool.id">
-          <TooltipTrigger as-child>
-            <Button
-              size="icon"
-              variant="ghost"
-              :class="[
+  <div class="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 px-6 py-3 text-xs">
+    <div class="flex flex-wrap gap-2 min-w-[14rem]">
+      <Select v-model="marketStore.symbol" by="value" class="mt-4">
+        <SelectTrigger class="w-[180px]">
+          <SelectValue placeholder="Select a symbol" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectItem v-for="symbol in symbolOptions" :key="symbol.value" :value="symbol.value">
+              <div class="flex flex-col">
+                <span class="text-sm font-semibold tracking-wide">{{ symbol.label }}</span>
+                <span class="text-xs text-muted-foreground">{{ symbol.description }}</span>
+              </div>
+            </SelectItem>
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </div>
+
+    <div class="flex items-center gap-3 text-right text-sm">
+      <div v-for="metric in ['open', 'high', 'low', 'close', 'growth']" :key="metric">
+        <span class="font-bold text-muted-foreground">{{ metric[0].toUpperCase() }}</span>
+        <span class="ml-1 font-semibold" :style="{ color: ohlcMetrics.color }">
+          {{ ohlcMetrics[metric as keyof typeof ohlcMetrics] }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-1 overflow-hidden p-4">
+    <div class="relative h-full w-full overflow-hidden rounded-xl border border-border/60 bg-card/70">
+      <TooltipProvider>
+        <div
+          class="pointer-events-auto absolute left-4 top-4 z-10 flex flex-col gap-2 rounded-full border border-border/50 bg-background/70 p-2 shadow-xl backdrop-blur">
+          <Tooltip v-for="tool in tools" :key="tool.id">
+            <TooltipTrigger as-child>
+              <Button size="icon" variant="ghost" :class="[
                 'size-9 rounded-full text-muted-foreground transition hover:bg-accent hover:text-accent-foreground',
                 activeTool === tool.id && 'bg-primary/10 text-primary'
-              ]"
-              @click="selectTool(tool.id)"
-            >
-              <component :is="tool.icon" class="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">
-            <p class="text-xs font-medium">{{ tool.label }}</p>
-          </TooltipContent>
-        </Tooltip>
-        <div class="h-px bg-border/60" />
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              size="icon"
-              variant="ghost"
-              class="size-9 rounded-full text-rose-300 transition hover:bg-rose-500/10 hover:text-rose-200"
-              @click="clearDrawings"
-            >
-              <Eraser class="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">
-            <p class="text-xs font-medium">Clear drawings</p>
-          </TooltipContent>
-        </Tooltip>
+              ]" @click="selectTool(tool.id)">
+                <component :is="tool.icon" class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p class="text-xs font-medium">{{ tool.label }}</p>
+            </TooltipContent>
+          </Tooltip>
+          <div class="h-px bg-border/60" />
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button size="icon" variant="ghost"
+                class="size-9 rounded-full text-rose-300 transition hover:bg-rose-500/10 hover:text-rose-200"
+                @click="clearDrawings">
+                <Eraser class="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p class="text-xs font-medium">Clear drawings</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+      <div ref="chartContainer" class="h-full w-full min-h-[360px]"></div>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap items-center justify-between gap-4 border-t border-border/60 px-6 py-3 text-xs">
+    <div class="flex flex-wrap gap-2">
+      <ToggleGroup v-model="marketStore.interval" type="single">
+        <ToggleGroupItem v-for="frame in marketStore.intervalDurations" :key="frame" :value="frame">
+          {{ frame }}
+        </ToggleGroupItem>
+      </ToggleGroup>
+    </div>
+
+    <div class="flex items-center gap-3 text-right text-sm">
+      <div>
+        <p class="font-semibold">{{ formattedNow }}</p>
+        <p class="text-xs text-muted-foreground">{{ timezone }}</p>
       </div>
-    </TooltipProvider>
-    <div ref="chartContainer" class="h-full w-full min-h-[360px]"></div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, onUnmounted, ref, watch, type Component } from 'vue';
+import { onBeforeUnmount, onMounted, onUnmounted, ref, watch, type Component, computed } from 'vue';
 import {
   createChart,
   LineStyle,
@@ -58,11 +97,70 @@ import {
 } from 'lightweight-charts';
 import { useMarketStore } from '@/stores/market';
 import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Eraser, Minus, Pointer, TrendingUp } from 'lucide-vue-next';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useNow } from "@vueuse/core";
 
 const chartContainer = ref<HTMLDivElement | null>(null);
+
 const marketStore = useMarketStore();
+
+interface SymbolOption {
+  value: string;
+  label: string;
+  description: string;
+}
+
+const symbolOptions: SymbolOption[] = [
+  { value: 'BTCUSDT', label: 'BTC / USDT', description: 'Bitcoin perpetual' },
+  { value: 'BNBUSDT', label: 'BNB / USDT', description: 'BNB perpetual' },
+  { value: 'ETHUSDT', label: 'ETH / USDT', description: 'Ethereum perpetual' },
+  { value: 'SOLUSDT', label: 'SOL / USDT', description: 'Solana perpetual' }
+];
+
+const ohlcMetrics = computed(() => {
+  const last = marketStore.candles[marketStore.candles.length - 1];
+  if (!last) {
+    return { open: '-', high: '-', low: '-', close: '-', growth: '-', color: undefined };
+  }
+
+  const previous = marketStore.candles.length > 1
+    ? marketStore.candles[marketStore.candles.length - 2]
+    : null;
+
+  let growth = '-';
+  let color = undefined;
+  if (previous) {
+    const growthValue = last.close - previous.close;
+    const growthRate = (growthValue / previous.close) * 100;
+    growth = `${growthValue > 0 ? '+' : '-'}${growthValue.toFixed(2)} (${growthRate.toFixed(2)}%)`;
+    color = growthValue > 0 ? marketStore.colors.upColor : marketStore.colors.downColor;
+  }
+
+  return {
+    open: Number(last.open).toFixed(2),
+    high: Number(last.high).toFixed(2),
+    low: Number(last.low).toFixed(2),
+    close: Number(last.close).toFixed(2),
+    growth,
+    color
+  };
+});
+
+const now = useNow({ interval: 1000 });
+const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const formatter = new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'medium', hour12: false });
+const formattedNow = computed(() => formatter.format(now.value));
+
 let candleSeries: ISeriesApi<'Candlestick'> | undefined;
 let chartInstance: IChartApi | null = null;
 let resizeObserver: ResizeObserver | null = null;
@@ -229,12 +327,12 @@ onMounted(() => {
   });
 
   candleSeries = chartInstance.addCandlestickSeries({
-    upColor: '#22c55e',
-    borderUpColor: '#22c55e',
-    wickUpColor: '#22c55e',
-    downColor: '#ef4444',
-    borderDownColor: '#ef4444',
-    wickDownColor: '#ef4444'
+    upColor: marketStore.colors.upColor,
+    borderUpColor: marketStore.colors.borderUpColor,
+    wickUpColor: marketStore.colors.wickUpColor,
+    downColor: marketStore.colors.downColor,
+    borderDownColor: marketStore.colors.borderDownColor,
+    wickDownColor: marketStore.colors.wickDownColor
   });
 
   chartInstance.subscribeClick(handleChartClick);
