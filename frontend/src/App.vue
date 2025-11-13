@@ -1,8 +1,6 @@
 <template>
-  <div class="min-h-screen bg-slate-950 text-slate-100">
-    <div class="flex min-h-screen flex-col">
-      <RouterView />
-    </div>
+  <div class="min-h-screen bg-background text-foreground">
+    <RouterView />
   </div>
 </template>
 

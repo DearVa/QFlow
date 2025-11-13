@@ -1,56 +1,90 @@
 <template>
-  <header
-    class="flex items-center justify-between border-b border-slate-900 bg-slate-950/95 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.4em]"
-  >
-    <div class="flex items-center gap-4">
-      <span class="text-sm font-semibold text-white tracking-[0.5em]">QFlow Studio</span>
-      <div class="flex items-center gap-2 text-slate-400">
-        <button class="rounded px-2 py-1 hover:bg-slate-900/70">File</button>
-        <button class="rounded px-2 py-1 hover:bg-slate-900/70">Edit</button>
-        <button class="rounded px-2 py-1 hover:bg-slate-900/70">Run</button>
+  <header class="border-b border-border/60 bg-background/80 text-[11px] uppercase tracking-[0.35em] backdrop-blur">
+    <div class="flex items-center gap-6 px-4 py-2">
+      <div class="flex items-center gap-2 text-sm font-semibold tracking-[0.4em]">
+        <PanelsTopLeft class="size-4 text-primary" />
+        <span>QFlow Studio</span>
       </div>
-    </div>
-    <div class="flex items-center gap-3 text-slate-200">
-      <details class="relative">
-        <summary
-          class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.45em] text-slate-300 hover:bg-slate-900/70"
-        >
-          View
-        </summary>
-        <div
-          class="absolute right-0 mt-2 min-w-[220px] rounded-md border border-slate-800 bg-slate-950/95 p-2 text-[12px] font-normal uppercase tracking-[0.2em] text-slate-200 shadow-xl"
-        >
-          <p class="px-2 pb-2 text-[10px] uppercase tracking-[0.45em] text-slate-500">Panels</p>
-          <button
-            v-for="panel in props.panels"
-            :key="panel.id"
-            class="flex w-full items-center justify-between rounded px-2 py-1 text-left text-[12px] normal-case tracking-normal text-slate-200 hover:bg-slate-900"
-            @click.prevent="$emit('toggle-panel', panel.id)"
-          >
-            <span>{{ panel.label }}</span>
-            <span class="text-xs text-slate-500">{{ panel.active ? '●' : '○' }}</span>
-          </button>
-          <div class="mt-2 border-t border-slate-800 pt-2">
-            <button
-              class="w-full rounded px-2 py-1 text-left text-[12px] normal-case tracking-normal text-slate-200 hover:bg-slate-900"
-              @click.prevent="$emit('reset-layout')"
+      <Menubar class="border-none bg-transparent p-0 text-[11px] uppercase tracking-[0.3em]">
+        <MenubarMenu>
+          <MenubarTrigger class="px-2 py-1 text-muted-foreground hover:text-foreground">File</MenubarTrigger>
+          <MenubarContent class="min-w-[220px] text-[12px] normal-case tracking-normal">
+            <MenubarItem class="text-sm" @select="$emit('reset-layout')">
+              New Workspace
+              <MenubarShortcut>⇧⌘N</MenubarShortcut>
+            </MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem class="text-sm">Settings</MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+        <MenubarMenu>
+          <MenubarTrigger class="px-2 py-1 text-muted-foreground hover:text-foreground">Run</MenubarTrigger>
+          <MenubarContent class="min-w-[200px] text-[12px] normal-case tracking-normal">
+            <MenubarItem class="text-sm">Compile strategy</MenubarItem>
+            <MenubarItem class="text-sm">Execute backtest</MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+        <MenubarMenu>
+          <MenubarTrigger class="px-2 py-1 text-muted-foreground hover:text-foreground">View</MenubarTrigger>
+          <MenubarContent class="min-w-[260px] text-[12px] normal-case tracking-normal">
+            <MenubarLabel class="text-[10px] uppercase tracking-[0.35em] text-muted-foreground">Panels</MenubarLabel>
+            <MenubarSeparator />
+            <MenubarCheckboxItem
+              v-for="panel in props.panels"
+              :key="panel.id"
+              :checked="panel.active"
+              class="text-xs"
+              @update:checked="$emit('toggle-panel', panel.id, $event as boolean)"
             >
-              Reset layout
-            </button>
-          </div>
+              <div class="flex flex-col gap-0.5">
+                <span class="font-medium text-foreground">{{ panel.label }}</span>
+                <span class="text-[10px] text-muted-foreground">{{ panel.description }}</span>
+              </div>
+            </MenubarCheckboxItem>
+            <MenubarSeparator />
+            <MenubarItem class="text-xs" @select="$emit('reset-layout')">Reset layout</MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+      </Menubar>
+      <div class="ml-auto flex items-center gap-3 text-[10px] tracking-[0.4em] text-muted-foreground">
+        <div class="flex items-center gap-2 rounded-full border border-border/50 px-3 py-1 text-xs font-semibold tracking-[0.3em]">
+          <ActivitySquare class="size-3" />
+          Live sync
         </div>
-      </details>
+        <div class="hidden items-center gap-2 rounded-full border border-border/50 px-3 py-1 text-xs tracking-[0.3em] sm:flex">
+          <MonitorCog class="size-3" />
+          Experimental build
+        </div>
+      </div>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-  panels: { id: string; label: string; active: boolean }[];
-}>();
+import {
+  Menubar,
+  MenubarCheckboxItem,
+  MenubarContent,
+  MenubarItem,
+  MenubarLabel,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarShortcut,
+  MenubarTrigger
+} from '@/components/ui/menubar';
+import { ActivitySquare, MonitorCog, PanelsTopLeft } from 'lucide-vue-next';
+
+interface MenuPanel {
+  id: string;
+  label: string;
+  active: boolean;
+  description?: string;
+}
+
+const props = defineProps<{ panels: MenuPanel[] }>();
 
 defineEmits<{
-  (event: 'toggle-panel', id: string): void;
+  (event: 'toggle-panel', id: string, value: boolean): void;
   (event: 'reset-layout'): void;
 }>();
 </script>

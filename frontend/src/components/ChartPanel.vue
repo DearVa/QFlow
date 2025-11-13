@@ -1,39 +1,51 @@
 <template>
-  <div class="relative h-full w-full overflow-hidden rounded-lg border border-slate-900 bg-slate-950">
-    <div
-      class="pointer-events-auto absolute left-4 top-4 z-10 flex flex-col gap-2 rounded-lg border border-slate-800 bg-slate-950/90 p-2 text-[11px] uppercase tracking-[0.4em] shadow-2xl"
-    >
-      <p class="px-1 text-[10px] font-semibold text-slate-400">Tools</p>
-      <Button
-        v-for="tool in tools"
-        :key="tool.id"
-        size="sm"
-        variant="ghost"
-        :class="[
-          'justify-start text-[11px] font-semibold uppercase tracking-[0.3em]',
-          activeTool === tool.id ? 'bg-slate-900 text-white' : 'text-slate-400'
-        ]"
-        @click="selectTool(tool.id)"
+  <div class="relative h-full w-full overflow-hidden rounded-xl border border-border/60 bg-card/70">
+    <TooltipProvider>
+      <div
+        class="pointer-events-auto absolute left-4 top-4 z-10 flex flex-col gap-2 rounded-full border border-border/50 bg-background/70 p-2 shadow-xl backdrop-blur"
       >
-        {{ tool.label }}
-      </Button>
-      <div class="mt-2 border-t border-slate-900 pt-2">
-        <Button
-          size="sm"
-          variant="ghost"
-          class="justify-start text-[11px] font-semibold uppercase tracking-[0.3em] text-rose-300"
-          @click="clearDrawings"
-        >
-          Clear
-        </Button>
+        <Tooltip v-for="tool in tools" :key="tool.id">
+          <TooltipTrigger as-child>
+            <Button
+              size="icon"
+              variant="ghost"
+              :class="[
+                'size-9 rounded-full text-muted-foreground transition hover:bg-accent hover:text-accent-foreground',
+                activeTool === tool.id && 'bg-primary/10 text-primary'
+              ]"
+              @click="selectTool(tool.id)"
+            >
+              <component :is="tool.icon" class="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <p class="text-xs font-medium">{{ tool.label }}</p>
+          </TooltipContent>
+        </Tooltip>
+        <div class="h-px bg-border/60" />
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              size="icon"
+              variant="ghost"
+              class="size-9 rounded-full text-rose-300 transition hover:bg-rose-500/10 hover:text-rose-200"
+              @click="clearDrawings"
+            >
+              <Eraser class="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <p class="text-xs font-medium">Clear drawings</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
-    </div>
+    </TooltipProvider>
     <div ref="chartContainer" class="h-full w-full min-h-[360px]"></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, onUnmounted, ref, watch, type Component } from 'vue';
 import {
   createChart,
   LineStyle,
@@ -46,6 +58,8 @@ import {
 } from 'lightweight-charts';
 import { useMarketStore } from '@/stores/market';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Eraser, Minus, Pointer, TrendingUp } from 'lucide-vue-next';
 
 const chartContainer = ref<HTMLDivElement | null>(null);
 const marketStore = useMarketStore();
@@ -55,12 +69,19 @@ let chartInstance: IChartApi | null = null;
 let resizeObserver: ResizeObserver | null = null;
 
 type Tool = 'select' | 'trendline' | 'horizontal';
-type Drawing = {
+
+interface Drawing {
   id: string;
   type: Extract<Tool, 'trendline' | 'horizontal'>;
   series: ISeriesApi<'Line'>;
   points: { time: Time; value: number }[];
-};
+}
+
+interface ToolConfig {
+  id: Tool;
+  label: string;
+  icon: Component;
+}
 
 const activeTool = ref<Tool>('select');
 const drawings = ref<Drawing[]>([]);
@@ -73,10 +94,10 @@ const createId = () => {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 };
 
-const tools: { id: Tool; label: string }[] = [
-  { id: 'select', label: 'Inspect' },
-  { id: 'trendline', label: 'Trend' },
-  { id: 'horizontal', label: 'Level' }
+const tools: ToolConfig[] = [
+  { id: 'select', label: 'Inspect data', icon: Pointer },
+  { id: 'trendline', label: 'Draw trendline', icon: TrendingUp },
+  { id: 'horizontal', label: 'Horizontal level', icon: Minus }
 ];
 
 const selectTool = (tool: Tool) => {
@@ -203,36 +224,34 @@ onMounted(() => {
 
   candleSeries = chartInstance.addCandlestickSeries({
     upColor: '#22c55e',
-    downColor: '#ef4444',
     borderUpColor: '#22c55e',
+    wickUpColor: '#22c55e',
+    downColor: '#ef4444',
     borderDownColor: '#ef4444',
-    wickDownColor: '#ef4444',
-    wickUpColor: '#22c55e'
+    wickDownColor: '#ef4444'
   });
 
   markersSeries = chartInstance.addLineSeries({
-    color: '#94a3b8',
+    color: '#22c55e',
     lineWidth: 2,
-    lineStyle: LineStyle.Dashed
+    priceLineVisible: false,
+    lastValueVisible: false
   });
 
   chartInstance.subscribeClick(handleChartClick);
 
   resizeObserver = new ResizeObserver(entries => {
-    const entry = entries[0];
-    if (entry) {
-      chartInstance?.resize(entry.contentRect.width, entry.contentRect.height);
+    for (const entry of entries) {
+      const { width, height } = entry.contentRect;
+      chartInstance?.resize(width, height);
     }
   });
-
   resizeObserver.observe(chartContainer.value);
 
   watch(
     () => marketStore.candles,
     candles => {
-      if (candleSeries) {
-        candleSeries.setData(candles as CandlestickData[]);
-      }
+      candleSeries?.setData(candles as CandlestickData[]);
       refreshHorizontalLines();
     },
     { immediate: true }
@@ -240,30 +259,25 @@ onMounted(() => {
 
   watch(
     () => marketStore.activeMarkers,
-    () => renderMarkers(),
-    { immediate: true }
-  );
-
-  watch(
-    () => marketStore.activeStrategySignals,
-    signals => {
-      if (!markersSeries) return;
-      const lineData = signals.map(signal => ({
-        time: signal.time as unknown as CandlestickData['time'],
-        value: signal.price
-      }));
-      markersSeries.setData(lineData);
+    () => {
+      renderMarkers();
     },
-    { immediate: true }
+    { immediate: true, deep: true }
   );
 });
 
 onBeforeUnmount(() => {
+  if (chartInstance) {
+    chartInstance.unsubscribeClick(handleChartClick);
+    chartInstance.remove();
+    chartInstance = null;
+  }
   resizeObserver?.disconnect();
+  resizeObserver = null;
 });
 
 onUnmounted(() => {
-  chartInstance?.unsubscribeClick(handleChartClick);
-  chartInstance?.remove();
+  candleSeries = undefined;
+  markersSeries = undefined;
 });
 </script>
