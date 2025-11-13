@@ -32,7 +32,8 @@
     "vaul-vue": "^0.4.1",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0",
-    "vue-sonner": "^2.0.9"
+    "vue-sonner": "^2.0.9",
+    "zod": "^3.25.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

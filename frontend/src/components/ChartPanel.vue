@@ -64,7 +64,6 @@ import { Eraser, Minus, Pointer, TrendingUp } from 'lucide-vue-next';
 const chartContainer = ref<HTMLDivElement | null>(null);
 const marketStore = useMarketStore();
 let candleSeries: ISeriesApi<'Candlestick'> | undefined;
-let markersSeries: ISeriesApi<'Line'> | undefined;
 let chartInstance: IChartApi | null = null;
 let resizeObserver: ResizeObserver | null = null;
 
@@ -114,15 +113,22 @@ const clearDrawings = () => {
 };
 
 const renderMarkers = () => {
-  if (!markersSeries) return;
-  const markers: SeriesMarker<Time>[] = marketStore.activeMarkers.map(marker => ({
+  if (!candleSeries) return;
+  const riskMarkers: SeriesMarker<Time>[] = marketStore.activeMarkers.map(marker => ({
     time: marker.time as unknown as Time,
     position: marker.type === 'take-profit' ? 'aboveBar' : 'belowBar',
     color: marker.type === 'take-profit' ? '#22c55e' : '#ef4444',
     shape: marker.type === 'take-profit' ? 'arrowDown' : 'arrowUp',
     text: marker.label
   }));
-  markersSeries.setMarkers(markers);
+  const tradeMarkers: SeriesMarker<Time>[] = marketStore.activeStrategySignals.map(signal => ({
+    time: signal.time as unknown as Time,
+    position: 'belowBar',
+    color: '#fbbf24',
+    shape: 'circle',
+    text: `Entry ${signal.price.toFixed(2)}`
+  }));
+  candleSeries.setMarkers([...riskMarkers, ...tradeMarkers]);
 };
 
 const refreshHorizontalLines = () => {
@@ -231,13 +237,6 @@ onMounted(() => {
     wickDownColor: '#ef4444'
   });
 
-  markersSeries = chartInstance.addLineSeries({
-    color: '#22c55e',
-    lineWidth: 2,
-    priceLineVisible: false,
-    lastValueVisible: false
-  });
-
   chartInstance.subscribeClick(handleChartClick);
 
   resizeObserver = new ResizeObserver(entries => {
@@ -264,6 +263,14 @@ onMounted(() => {
     },
     { immediate: true, deep: true }
   );
+
+  watch(
+    () => marketStore.activeStrategySignals,
+    () => {
+      renderMarkers();
+    },
+    { immediate: true, deep: true }
+  );
 });
 
 onBeforeUnmount(() => {
@@ -278,6 +285,5 @@ onBeforeUnmount(() => {
 
 onUnmounted(() => {
   candleSeries = undefined;
-  markersSeries = undefined;
 });
 </script>

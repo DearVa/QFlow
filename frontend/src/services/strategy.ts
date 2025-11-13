@@ -1,24 +1,25 @@
-import { AreaPlugin } from 'rete-area-plugin';
-import { NodeEditor, GetSchemes, ClassicPreset } from 'rete';
-import type { StrategyNodeGraph, CompiledStrategy } from '@/types/strategy';
+import type { CompiledStrategy, StrategyNodeGraph, StrategyNode } from '@/types/strategy';
 
-export type StrategyEditorSchemes = GetSchemes<ClassicPreset.Node, ClassicPreset.Connection<ClassicPreset.Node, ClassicPreset.Node>>;
-
-interface AreaExtra {
-    getNodesRect(): DOMRect;
-}
-
-export const createStrategyEditor = async (container: HTMLElement): Promise<NodeEditor<StrategyEditorSchemes>> => {
-    const editor = new NodeEditor<StrategyEditorSchemes>();
-    const area = new AreaPlugin<StrategyEditorSchemes, AreaExtra>(container);
-    editor.use(area);
-    return editor;
+const describeNode = (node: StrategyNode): string => {
+  const parts = Object.entries(node.data ?? {})
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(', ');
+  return `// ${node.label} (${node.type})${parts ? ` => ${parts}` : ''}`;
 };
 
 export const buildStrategyFromNodes = async (graph: StrategyNodeGraph): Promise<CompiledStrategy> => {
-    return {
-        id: `strategy-${Date.now()}`,
-        nodes: graph,
-        code: `export default function execute(context) { /* generated */ }`
-    };
+  const normalizedGraph: StrategyNodeGraph = {
+    id: graph.id,
+    name: graph.name,
+    nodes: graph.nodes,
+    connections: graph.connections
+  };
+  const nodeDescriptions = normalizedGraph.nodes.map(describeNode).join('\n');
+  const code = `export default async function execute(ctx) {\n${nodeDescriptions}\n  return ctx;\n}`;
+
+  return {
+    id: normalizedGraph.id || `strategy-${Date.now()}`,
+    nodes: normalizedGraph,
+    code
+  };
 };
