@@ -1,0 +1,9 @@
+{
+  "name": "QFlow",
+  "short_name": "QFlow",
+  "display": "standalone",
+  "start_url": "/",
+  "background_color": "#020617",
+  "theme_color": "#0ea5e9",
+  "icons": []
+}
