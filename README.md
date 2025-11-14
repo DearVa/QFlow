@@ -46,4 +46,4 @@ The API exposes:
 - `POST /api/strategy/compile` – turn node graph into executable metadata
 - `POST /api/strategy/backtest` – SMA cross backtest that derives trades + metrics via `technicalindicators`
 
-The WebSocket stream lives at `ws://localhost:8080/strategy-stream`.
+The WebSocket stream lives at `ws://localhost:8080/stream/strategy`.

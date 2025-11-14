@@ -1,0 +1,28 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
+    "rootDir": "src",
+    "baseUrl": ".",
+    "paths": {
+      "@qflow/shared/*": [
+        "../shared/src/*"
+      ],
+      "@/*": [
+        "src/*"
+      ]
+    }
+  },
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "references": [
+    {
+      "path": "../shared"
+    }
+  ]
+}
