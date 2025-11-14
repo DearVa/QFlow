@@ -4,6 +4,7 @@ import { json } from 'body-parser';
 import marketRouter from './routes/market';
 import strategyRouter from './routes/strategy';
 import { attachStrategySocket } from './websocket/strategySocket';
+import { attachMarketSocket } from './websocket/marketSocket';
 
 const app = express();
 app.use(cors());
@@ -18,3 +19,4 @@ const server = app.listen(port, () => {
 });
 
 attachStrategySocket(server);
+attachMarketSocket(server);

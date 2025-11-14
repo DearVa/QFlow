@@ -92,6 +92,7 @@ import {
   type IChartApi,
   type ISeriesApi,
   type MouseEventParams,
+  type CrosshairMoveEventParams,
   type SeriesMarker,
   type Time
 } from 'lightweight-charts';
@@ -107,7 +108,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/ui/select';
 import { useNow } from "@vueuse/core";
 
 const chartContainer = ref<HTMLDivElement | null>(null);
@@ -120,37 +121,47 @@ interface SymbolOption {
   description: string;
 }
 
-const symbolOptions: SymbolOption[] = [
-  { value: 'BTCUSDT', label: 'BTC / USDT', description: 'Bitcoin perpetual' },
-  { value: 'BNBUSDT', label: 'BNB / USDT', description: 'BNB perpetual' },
-  { value: 'ETHUSDT', label: 'ETH / USDT', description: 'Ethereum perpetual' },
-  { value: 'SOLUSDT', label: 'SOL / USDT', description: 'Solana perpetual' }
-];
+const symbolOptions = computed<SymbolOption[]>(() => {
+  if (marketStore.perpetualSymbols.length === 0) {
+    return [
+      { value: 'BTCUSDT', label: 'BTC / USDT', description: 'Bitcoin perpetual' },
+      { value: 'ETHUSDT', label: 'ETH / USDT', description: 'Ethereum perpetual' },
+    ];
+  }
+  return marketStore.perpetualSymbols.map(symbol => ({
+    value: symbol.symbol,
+    label: symbol.label,
+    description: symbol.description,
+  }));
+});
+
+const hoveredCandle = ref<CandlestickData | null>(null);
 
 const ohlcMetrics = computed(() => {
-  const last = marketStore.candles[marketStore.candles.length - 1];
-  if (!last) {
+  const current = hoveredCandle.value
+    ?? marketStore.candles[marketStore.candles.length - 1];
+  if (!current) {
     return { open: '-', high: '-', low: '-', close: '-', growth: '-', color: undefined };
   }
 
-  const previous = marketStore.candles.length > 1
-    ? marketStore.candles[marketStore.candles.length - 2]
-    : null;
+  const targetIndex = marketStore.candles.findIndex(candle => candle.time === current.time);
+  const previous = targetIndex > 0 ? marketStore.candles[targetIndex - 1] : null;
 
   let growth = '-';
   let color = undefined;
   if (previous) {
-    const growthValue = last.close - previous.close;
+    const growthValue = current.close - previous.close;
     const growthRate = (growthValue / previous.close) * 100;
-    growth = `${growthValue > 0 ? '+' : '-'}${growthValue.toFixed(2)} (${growthRate.toFixed(2)}%)`;
-    color = growthValue > 0 ? marketStore.colors.upColor : marketStore.colors.downColor;
+    const prefix = growthValue >= 0 ? '+' : '';
+    growth = `${prefix}${growthValue.toFixed(2)} (${growthRate.toFixed(2)}%)`;
+    color = growthValue >= 0 ? marketStore.colors.upColor : marketStore.colors.downColor;
   }
 
   return {
-    open: Number(last.open).toFixed(2),
-    high: Number(last.high).toFixed(2),
-    low: Number(last.low).toFixed(2),
-    close: Number(last.close).toFixed(2),
+    open: Number(current.open).toFixed(2),
+    high: Number(current.high).toFixed(2),
+    low: Number(current.low).toFixed(2),
+    close: Number(current.close).toFixed(2),
     growth,
     color
   };
@@ -304,6 +315,15 @@ const handleChartClick = (param: MouseEventParams) => {
   }
 };
 
+const handleCrosshairMove = (param: CrosshairMoveEventParams) => {
+  if (!param.time || !candleSeries) {
+    hoveredCandle.value = null;
+    return;
+  }
+  const hovered = param.seriesData.get(candleSeries) as CandlestickData | undefined;
+  hoveredCandle.value = hovered ?? null;
+};
+
 onMounted(() => {
   if (!chartContainer.value) {
     return;
@@ -336,6 +356,7 @@ onMounted(() => {
   });
 
   chartInstance.subscribeClick(handleChartClick);
+  chartInstance.subscribeCrosshairMove(handleCrosshairMove);
 
   resizeObserver = new ResizeObserver(entries => {
     for (const entry of entries) {
@@ -374,6 +395,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (chartInstance) {
     chartInstance.unsubscribeClick(handleChartClick);
+    chartInstance.unsubscribeCrosshairMove(handleCrosshairMove);
     chartInstance.remove();
     chartInstance = null;
   }
